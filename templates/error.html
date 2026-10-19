@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}{{ title or 'Something went wrong' }}{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <section class="auth-card error-card">
+    <p class="eyebrow">Error {{ status or 404 }}</p>
+    <h1 class="auth-title">{{ heading }}</h1>
+    <p class="auth-lede">{{ message }}</p>
+    <p class="error-actions">
+      <a class="btn btn-primary" href="/">Back to the dashboard</a>
+      <a class="btn" href="/streets">Street registry</a>
+    </p>
+  </section>
+</div>
+{% endblock %}

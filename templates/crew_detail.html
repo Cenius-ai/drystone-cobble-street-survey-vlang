@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}{{ crew.name }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="page-head-main">
+    <p class="eyebrow"><a href="/crews">Crew roster</a> · foreman {{ crew.foreman or 'not recorded' }}</p>
+    <h1 class="page-title">{{ ui.glyph('crew') }}{{ crew.name }}</h1>
+    <p class="page-lede">
+      {{ ui.crew_state(crew.active) }}
+      {{ crew.job_count }} repair job{{ 's' if crew.job_count != 1 }} on record
+      · added {{ crew.created_at|human_stamp }}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a class="btn" href="/crews">Back to roster</a>
+    <a class="btn" href="/jobs?status=planned">Planned jobs</a>
+  </div>
+</header>
+
+<div class="detail-grid">
+  <div class="detail-main">
+    <section class="card">
+      <h2 class="card-title">{{ ui.glyph('job') }}Jobs assigned to this crew</h2>
+      {% if jobs %}
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="visually-hidden">Repair jobs assigned to {{ crew.name }}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Job</th>
+              <th scope="col">Street</th>
+              <th scope="col" class="num">Setts</th>
+              <th scope="col">Scheduled</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for job in jobs %}
+            <tr>
+              <td data-label="Job"><a href="/jobs/{{ job.id }}">Job #{{ job.id }}</a></td>
+              <td data-label="Street"><a href="/streets/{{ job.street_id }}">{{ job.street_name }}</a> <span class="muted">patch #{{ job.patch_id }}</span></td>
+              <td data-label="Setts" class="num">{{ job.sett_count }}</td>
+              <td data-label="Scheduled">{{ job.scheduled_for|human_date }}</td>
+              <td data-label="Status">{{ ui.status_chip(job.status) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-inline">
+        <p>No jobs assigned to this crew yet — it is free to be assigned or retired.</p>
+      </div>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="detail-side">
+    <section class="card">
+      <h2 class="card-title">{{ ui.glyph('crew') }}Crew details</h2>
+      <form method="post" action="/crews/{{ crew.id }}/edit" data-guard novalidate>
+        {{ ui.csrf(csrf_token) }}
+        <div class="field">
+          <label for="edit-name">Crew name</label>
+          <input id="edit-name" name="name" type="text" value="{{ form.name }}"
+                 data-required-label="Enter the crew name."
+                 {% if errors.get('name') %}aria-invalid="true" aria-describedby="err-name"{% endif %}>
+          {{ ui.field_error(errors, 'name') }}
+        </div>
+        <div class="field">
+          <label for="edit-foreman">Foreman</label>
+          <input id="edit-foreman" name="foreman" type="text" value="{{ form.foreman }}"
+                 data-required-label="Enter the foreman for this crew."
+                 {% if errors.get('foreman') %}aria-invalid="true" aria-describedby="err-foreman"{% endif %}>
+          {{ ui.field_error(errors, 'foreman') }}
+        </div>
+        <p class="form-actions">
+          <button class="btn btn-primary btn-sm" type="submit" data-busy-label="Saving…">Save crew</button>
+        </p>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">{{ ui.glyph('crew') }}Crew lifecycle</h2>
+      <p class="muted">
+        {% if crew.active %}
+        This crew is active and appears in every job assignment select. Deactivating keeps its job history intact.
+        {% else %}
+        This crew is inactive and is hidden from job assignment. Reactivate it to assign new jobs.
+        {% endif %}
+      </p>
+      <form method="post" action="/crews/{{ crew.id }}/toggle-active">
+        {{ ui.csrf(csrf_token) }}
+        <button class="btn btn-sm" type="submit">{{ 'Deactivate crew' if crew.active else 'Reactivate crew' }}</button>
+      </form>
+    </section>
+
+    <section class="card card-danger">
+      <h2 class="card-title">{{ ui.glyph('job') }}Remove this crew</h2>
+      <p class="muted">
+        A crew can only be removed when no repair job references it.
+        {% if crew.job_count %}This crew has {{ crew.job_count }} job{{ 's' if crew.job_count != 1 }} on record — deactivate it instead.{% endif %}
+      </p>
+      <form method="post" action="/crews/{{ crew.id }}/delete" data-confirm="Delete {{ crew.name }} from the roster? This cannot be undone.">
+        {{ ui.csrf(csrf_token) }}
+        <button class="btn btn-danger btn-sm" type="submit">Delete crew</button>
+      </form>
+    </section>
+  </aside>
+</div>
+{% endblock %}

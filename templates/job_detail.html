@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Repair job #{{ job.id }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="page-head-main">
+    <p class="eyebrow"><a href="/jobs">Repair jobs</a> · job #{{ job.id }}</p>
+    <h1 class="page-title">{{ ui.glyph('job') }}{{ job.street_name }} — {{ job.patch_location }}</h1>
+    <p class="page-lede">
+      {{ ui.status_chip(job.status) }}
+      {{ job.crew_name }} · {{ job.sett_count }} setts
+      {% if job.scheduled_for %}· scheduled {{ job.scheduled_for|human_date }}{% endif %}
+      {{ ui.heritage_badge(job.heritage_conservation_area) }}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a class="btn" href="/patches/{{ job.patch_id }}">Open patch</a>
+    <a class="btn" href="/jobs">All jobs</a>
+  </div>
+</header>
+
+{% if job.heritage_conservation_area and not job.heritage_consent_ref %}
+<p class="flash flash-error" role="status">
+  <span class="flash-dot" aria-hidden="true"></span>
+  <span>This street is a heritage conservation area and this job has no consent reference. Add one before moving it to scheduled, in progress or complete.</span>
+</p>
+{% endif %}
+
+<div class="detail-grid">
+  <div class="detail-main">
+    <section class="card">
+      <h2 class="card-title">{{ ui.glyph('job') }}Job record</h2>
+      <dl class="facts">
+        <div><dt>Street</dt><dd><a href="/streets/{{ job.street_id }}">{{ job.street_name }}</a>{% if job.heritage_conservation_area %} · conservation area{% endif %}</dd></div>
+        <div><dt>Patch</dt><dd><a href="/patches/{{ job.patch_id }}">{{ job.patch_location }}</a></dd></div>
+        <div><dt>Crew</dt><dd><a href="/crews/{{ job.crew_id }}">{{ job.crew_name }}</a>{% if not job.crew_active %} <span class="chip chip-blocked">Inactive</span>{% endif %}</dd></div>
+        <div><dt>Setts to lay</dt><dd class="num">{{ job.sett_count }}</dd></div>
+        <div><dt>Status</dt><dd>{{ ui.status_chip(job.status) }}</dd></div>
+        <div><dt>Scheduled for</dt><dd>{{ job.scheduled_for|human_date }}</dd></div>
+        <div><dt>Heritage consent</dt><dd>{% if job.heritage_consent_ref %}<code>{{ job.heritage_consent_ref }}</code>{% elif job.heritage_conservation_area %}<span class="chip chip-blocked">Missing</span>{% else %}Not required{% endif %}</dd></div>
+        <div><dt>Raised</dt><dd>{{ job.created_at|human_stamp }}</dd></div>
+        <div class="facts-wide"><dt>Notes</dt><dd>{{ job.notes or '—' }}</dd></div>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">{{ ui.glyph('job') }}Patch context</h2>
+      <dl class="facts">
+        <div><dt>Patch severity</dt><dd>{{ ui.severity_chip(job.patch_severity) }}</dd></div>
+        <div><dt>Patch status</dt><dd>{{ ui.patch_status_chip(job.patch_status) }}</dd></div>
+        <div><dt>Heritage street</dt><dd>{{ ui.heritage_badge(job.heritage_conservation_area) }}</dd></div>
+      </dl>
+      <p class="card-foot"><a href="/patches/{{ job.patch_id }}">View all jobs for this patch</a></p>
+    </section>
+  </div>
+
+  <aside class="detail-side">
+    <section class="card">
+      <h2 class="card-title">{{ ui.glyph('job') }}Edit job</h2>
+      <form method="post" action="/jobs/{{ job.id }}/edit" data-guard novalidate>
+        {{ ui.csrf(csrf_token) }}
+        <div class="field">
+          <label for="crew_id">Repair crew</label>
+          <select id="crew_id" name="crew_id"
+                  {% if errors.get('crew_id') %}aria-invalid="true" aria-describedby="err-crew_id"{% endif %}>
+            {% for crew in crews %}
+            <option value="{{ crew.id }}" {% if form.crew_id == crew.id %}selected{% endif %}>{{ crew.name }}{% if not crew.active %} (inactive){% endif %}</option>
+            {% endfor %}
+          </select>
+          {{ ui.field_error(errors, 'crew_id') }}
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="sett_count">Setts to lay</label>
+            <input id="sett_count" name="sett_count" type="number" min="1" step="1" inputmode="numeric"
+                   value="{{ form.sett_count }}"
+                   data-required-label="Enter the sett count."
+                   {% if errors.get('sett_count') %}aria-invalid="true" aria-describedby="err-sett_count"{% endif %}>
+            {{ ui.field_error(errors, 'sett_count') }}
+          </div>
+          <div class="field">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              {% for status in JOB_STATUSES %}
+              <option value="{{ status }}" {% if form.status == status %}selected{% endif %}>{{ STATUS_LABELS[status] }}</option>
+              {% endfor %}
+            </select>
+            {{ ui.field_error(errors, 'status') }}
+          </div>
+        </div>
+        <div class="field">
+          <label for="scheduled_for">Scheduled for</label>
+          <input id="scheduled_for" name="scheduled_for" type="date" value="{{ form.scheduled_for }}"
+                 {% if errors.get('scheduled_for') %}aria-invalid="true" aria-describedby="err-scheduled_for"{% endif %}>
+          {{ ui.field_error(errors, 'scheduled_for') }}
+        </div>
+        <div class="field">
+          <label for="heritage_consent_ref">Heritage consent ref</label>
+          <input id="heritage_consent_ref" name="heritage_consent_ref" type="text" value="{{ form.heritage_consent_ref }}"
+                 placeholder="e.g. HCA/2026/0184"
+                 {% if errors.get('heritage_consent_ref') %}aria-invalid="true" aria-describedby="err-heritage_consent_ref"{% endif %}>
+          {% if job.heritage_conservation_area %}
+          <p class="field-help">Required for scheduled, in progress and complete on this conservation-area street.</p>
+          {% endif %}
+          {{ ui.field_error(errors, 'heritage_consent_ref') }}
+        </div>
+        <div class="field">
+          <label for="notes">Job notes</label>
+          <textarea id="notes" name="notes" rows="3">{{ form.notes }}</textarea>
+          {{ ui.field_error(errors, 'notes') }}
+        </div>
+        <p class="form-actions">
+          <button class="btn btn-primary btn-sm" type="submit" data-busy-label="Saving…">Save job</button>
+        </p>
+      </form>
+    </section>
+
+    <section class="card card-danger">
+      <h2 class="card-title">{{ ui.glyph('job') }}Delete this job</h2>
+      <p class="muted">Deleting the job frees its patch for removal from the register.</p>
+      <form method="post" action="/jobs/{{ job.id }}/delete" data-confirm="Delete job #{{ job.id }}? This cannot be undone.">
+        {{ ui.csrf(csrf_token) }}
+        <button class="btn btn-danger btn-sm" type="submit">Delete job</button>
+      </form>
+    </section>
+  </aside>
+</div>
+{% endblock %}

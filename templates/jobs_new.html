@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Raise repair job{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="page-head-main">
+    <p class="eyebrow"><a href="/jobs">Repair jobs</a> · new</p>
+    <h1 class="page-title">{{ ui.glyph('job') }}Raise a repair job</h1>
+    <p class="page-lede">Pick the patch, assign an active crew and record the sett count. The sett count defaults to the patch total and can be overridden.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn" href="/jobs">Back to jobs</a>
+  </div>
+</header>
+
+{% if not patches %}
+<section class="card empty-state">
+  <h2 class="card-title">{{ ui.glyph('patch') }}No patches to raise a job from</h2>
+  <p>A repair job is always raised against a loose-set patch. Log a patch on a street first, then raise the job.</p>
+  <p><a class="btn btn-primary" href="/streets">Go to the street registry</a></p>
+</section>
+{% else %}
+<div class="split">
+  <aside class="rail" aria-label="Selected patch">
+    <section class="rail-card">
+      <h2 class="rail-title">Selected patch</h2>
+      {% if selected_patch %}
+      <p class="rail-strong">{{ selected_patch.street_name }}</p>
+      <p class="muted">{{ selected_patch.location_description }}</p>
+      <p class="rail-facts">
+        <span class="chip chip-muted">{{ selected_patch.sett_count }} setts</span>
+        {{ ui.severity_chip(selected_patch.severity) }}
+        {{ ui.heritage_badge(selected_patch.heritage_conservation_area) }}
+      </p>
+      <p><a class="btn btn-sm" href="/patches/{{ selected_patch.id }}">Open patch</a></p>
+      {% else %}
+      <p class="muted">Choose a patch from the list and its sett count will prefill here.</p>
+      {% endif %}
+    </section>
+  </aside>
+
+  <section class="results">
+    <div class="card">
+      <h2 class="card-title">{{ ui.glyph('job') }}Job details</h2>
+      <form method="post" action="/jobs" data-guard novalidate>
+        {{ ui.csrf(csrf_token) }}
+        <div class="field">
+          <label for="patch_id">Patch</label>
+          <select id="patch_id" name="patch_id"
+                  {% if errors.get('patch_id') %}aria-invalid="true" aria-describedby="err-patch_id"{% endif %}>
+            {% for patch in patches %}
+            <option value="{{ patch.id }}" {% if form.patch_id == patch.id %}selected{% endif %}>
+              {{ patch.street_name }} — {{ patch.location_description }} ({{ patch.sett_count }} setts)
+            </option>
+            {% endfor %}
+          </select>
+          {{ ui.field_error(errors, 'patch_id') }}
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="crew_id">Repair crew</label>
+            <select id="crew_id" name="crew_id"
+                    {% if errors.get('crew_id') %}aria-invalid="true" aria-describedby="err-crew_id"{% endif %}>
+              {% for crew in crews %}
+              <option value="{{ crew.id }}" {% if form.crew_id == crew.id %}selected{% endif %}>{{ crew.name }} — {{ crew.foreman }}</option>
+              {% endfor %}
+            </select>
+            <p class="field-help">Only active crews are listed.</p>
+            {{ ui.field_error(errors, 'crew_id') }}
+          </div>
+          <div class="field">
+            <label for="sett_count">Setts to lay</label>
+            <input id="sett_count" name="sett_count" type="number" min="1" step="1" inputmode="numeric"
+                   value="{{ form.sett_count }}" placeholder="42"
+                   data-required-label="Enter the sett count."
+                   {% if errors.get('sett_count') %}aria-invalid="true" aria-describedby="err-sett_count"{% endif %}>
+            <p class="field-help">Defaults to the patch total; override if only part is re-laid.</p>
+            {{ ui.field_error(errors, 'sett_count') }}
+          </div>
+        </div>
+        <div class="form-grid form-grid-3">
+          <div class="field">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              {% for status in JOB_STATUSES %}
+              <option value="{{ status }}" {% if form.status == status %}selected{% endif %}>{{ STATUS_LABELS[status] }}</option>
+              {% endfor %}
+            </select>
+            {{ ui.field_error(errors, 'status') }}
+          </div>
+          <div class="field">
+            <label for="scheduled_for">Scheduled for</label>
+            <input id="scheduled_for" name="scheduled_for" type="date" value="{{ form.scheduled_for }}"
+                   {% if errors.get('scheduled_for') %}aria-invalid="true" aria-describedby="err-scheduled_for"{% endif %}>
+            {{ ui.field_error(errors, 'scheduled_for') }}
+          </div>
+          <div class="field">
+            <label for="heritage_consent_ref">Heritage consent ref</label>
+            <input id="heritage_consent_ref" name="heritage_consent_ref" type="text" value="{{ form.heritage_consent_ref }}"
+                   placeholder="e.g. HCA/2026/0184"
+                   {% if errors.get('heritage_consent_ref') %}aria-invalid="true" aria-describedby="err-heritage_consent_ref"{% endif %}>
+            {{ ui.field_error(errors, 'heritage_consent_ref') }}
+          </div>
+        </div>
+        <p class="field-help">Conservation-area patches require a consent reference before a job can be scheduled, started or completed.</p>
+        <div class="field">
+          <label for="notes">Job notes</label>
+          <textarea id="notes" name="notes" rows="3">{{ form.notes }}</textarea>
+          {{ ui.field_error(errors, 'notes') }}
+        </div>
+        <p class="form-actions">
+          <button class="btn btn-primary" type="submit" data-busy-label="Raising job…">Raise repair job</button>
+        </p>
+      </form>
+    </div>
+  </section>
+</div>
+{% endif %}
+{% endblock %}

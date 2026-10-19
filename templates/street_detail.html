@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}{{ street.name }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="page-head-main">
+    <p class="eyebrow"><a href="/streets">Street registry</a> · {{ street.district or 'District not recorded' }}</p>
+    <h1 class="page-title">{{ ui.glyph('street') }}{{ street.name }}</h1>
+    <p class="page-lede">
+      {{ ui.heritage_badge(street.heritage_conservation_area) }}
+      {{ patches|length }} patch{{ 'es' if patches|length != 1 }} · {{ job_count }} repair job{{ 's' if job_count != 1 }}
+      · registered {{ street.created_at|human_stamp }}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-primary" href="#log-patch">Log a patch</a>
+  </div>
+</header>
+
+<div class="detail-grid">
+  <div class="detail-main">
+    <section class="card">
+      <h2 class="card-title">{{ ui.glyph('patch') }}Patches on this street</h2>
+      {% if patches %}
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="visually-hidden">Loose cobble patches logged on {{ street.name }}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Location</th>
+              <th scope="col" class="num">Setts</th>
+              <th scope="col">Severity</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="num">Jobs</th>
+              <th scope="col"><span class="visually-hidden">Open</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for patch in patches %}
+            <tr>
+              <td data-label="Location"><a href="/patches/{{ patch.id }}">{{ patch.location_description }}</a></td>
+              <td data-label="Setts" class="num">{{ patch.sett_count }}</td>
+              <td data-label="Severity">{{ ui.severity_chip(patch.severity) }}</td>
+              <td data-label="Status">{{ ui.patch_status_chip(patch.status) }}</td>
+              <td data-label="Jobs" class="num">{{ patch.job_count }}</td>
+              <td data-label="" class="row-action"><a class="btn btn-sm" href="/patches/{{ patch.id }}">Open</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-inline">
+        <p>No loose-set patches logged on this street yet.</p>
+        <p class="muted">Use the form below to record the first patch.</p>
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="card" id="log-patch">
+      <h2 class="card-title">{{ ui.glyph('patch') }}Log a loose-set patch</h2>
+      <form method="post" action="/streets/{{ street.id }}/patches" data-guard novalidate>
+        {{ ui.csrf(csrf_token) }}
+        <div class="field">
+          <label for="location_description">Where is it?</label>
+          <input id="location_description" name="location_description" type="text"
+                 value="{{ patch_form.location_description }}"
+                 placeholder="e.g. Outside No. 14, gully course across the carriageway"
+                 data-required-label="Describe where the loose setts are."
+                 {% if patch_errors.get('location_description') %}aria-invalid="true" aria-describedby="err-location_description"{% endif %}>
+          {{ ui.field_error(patch_errors, 'location_description') }}
+        </div>
+        <div class="form-grid form-grid-3">
+          <div class="field">
+            <label for="sett_count">Sett count</label>
+            <input id="sett_count" name="sett_count" type="number" min="1" step="1" inputmode="numeric"
+                   value="{{ patch_form.sett_count }}" placeholder="42"
+                   data-required-label="Enter the sett count."
+                   {% if patch_errors.get('sett_count') %}aria-invalid="true" aria-describedby="err-sett_count"{% endif %}>
+            {{ ui.field_error(patch_errors, 'sett_count') }}
+          </div>
+          <div class="field">
+            <label for="severity">Severity</label>
+            <select id="severity" name="severity">
+              {% for severity in SEVERITIES %}
+              <option value="{{ severity }}" {% if patch_form.severity == severity %}selected{% endif %}>{{ severity|capitalize }}</option>
+              {% endfor %}
+            </select>
+            {{ ui.field_error(patch_errors, 'severity') }}
+          </div>
+          <div class="field">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              <option value="open" {% if patch_form.status == 'open' %}selected{% endif %}>Open</option>
+              <option value="repaired" {% if patch_form.status == 'repaired' %}selected{% endif %}>Repaired</option>
+            </select>
+            {{ ui.field_error(patch_errors, 'status') }}
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="discovered_on">Discovered on</label>
+            <input id="discovered_on" name="discovered_on" type="date" value="{{ patch_form.discovered_on }}"
+                   {% if patch_errors.get('discovered_on') %}aria-invalid="true" aria-describedby="err-discovered_on"{% endif %}>
+            {{ ui.field_error(patch_errors, 'discovered_on') }}
+          </div>
+          <div class="field">
+            <label for="patch-notes">Notes</label>
+            <input id="patch-notes" name="notes" type="text" value="{{ patch_form.notes }}" placeholder="Access, drainage, stone size">
+            {{ ui.field_error(patch_errors, 'notes') }}
+          </div>
+        </div>
+        <p class="form-actions">
+          <button class="btn btn-primary" type="submit" data-busy-label="Saving patch…">Log patch</button>
+        </p>
+      </form>
+    </section>
+  </div>
+
+  <aside class="detail-side">
+    <section class="card">
+      <h2 class="card-title">{{ ui.glyph('street') }}Street details</h2>
+      <form method="post" action="/streets/{{ street.id }}/edit" data-guard novalidate>
+        {{ ui.csrf(csrf_token) }}
+        <div class="field">
+          <label for="edit-name">Street name</label>
+          <input id="edit-name" name="name" type="text" value="{{ form.name }}"
+                 data-required-label="Enter the street name."
+                 {% if errors.get('name') %}aria-invalid="true" aria-describedby="err-name"{% endif %}>
+          {{ ui.field_error(errors, 'name') }}
+        </div>
+        <div class="field">
+          <label for="edit-district">District</label>
+          <input id="edit-district" name="district" type="text" value="{{ form.district }}"
+                 {% if errors.get('district') %}aria-invalid="true" aria-describedby="err-district"{% endif %}>
+          {{ ui.field_error(errors, 'district') }}
+        </div>
+        <div class="field">
+          <label for="edit-notes">Survey notes</label>
+          <textarea id="edit-notes" name="notes" rows="3">{{ form.notes }}</textarea>
+          {{ ui.field_error(errors, 'notes') }}
+        </div>
+        <label class="check"><input type="checkbox" name="heritage" value="1" {% if form.heritage %}checked{% endif %}> Heritage conservation area</label>
+        <p class="form-actions">
+          <button class="btn btn-primary btn-sm" type="submit" data-busy-label="Saving…">Save street</button>
+        </p>
+      </form>
+    </section>
+
+    <section class="card card-danger">
+      <h2 class="card-title">{{ ui.glyph('patch') }}Remove this street</h2>
+      <p class="muted">
+        A street can only be removed once every patch and repair job on it has been deleted.
+        {% if patches or job_count %}
+        This street still has {{ patches|length }} patch{{ 'es' if patches|length != 1 }} and {{ job_count }} job{{ 's' if job_count != 1 }}.
+        {% endif %}
+      </p>
+      <form method="post" action="/streets/{{ street.id }}/delete" data-confirm="Delete {{ street.name }} from the register? This cannot be undone.">
+        {{ ui.csrf(csrf_token) }}
+        <button class="btn btn-danger btn-sm" type="submit">Delete street</button>
+      </form>
+    </section>
+  </aside>
+</div>
+{% endblock %}

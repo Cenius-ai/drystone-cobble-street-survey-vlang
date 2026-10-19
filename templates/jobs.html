@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Repair jobs{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="page-head-main">
+    <p class="eyebrow">Works</p>
+    <h1 class="page-title">{{ ui.glyph('job') }}Repair jobs</h1>
+    <p class="page-lede">
+      {{ jobs|length }} of {{ total_jobs }} job{{ 's' if total_jobs != 1 }} shown.
+      Each job assigns one active crew to a patch, with the sett count and the heritage consent reference.
+    </p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-primary" href="/jobs/new">Raise repair job</a>
+  </div>
+</header>
+
+<div class="split">
+  <aside class="rail" aria-label="Job filters">
+    <form method="get" action="/jobs" class="rail-card">
+      <h2 class="rail-title">Filters</h2>
+      <div class="field">
+        <label for="q">Search</label>
+        <input id="q" name="q" type="search" value="{{ query }}" placeholder="Street, patch or crew">
+      </div>
+      <fieldset class="field check-group">
+        <legend>Status</legend>
+        {% for status in JOB_STATUSES %}
+        <label class="check">
+          <input type="checkbox" name="status" value="{{ status }}" {% if status in statuses %}checked{% endif %}>
+          {{ STATUS_LABELS[status] }}
+        </label>
+        {% endfor %}
+      </fieldset>
+      <div class="field">
+        <label for="street_id">Street</label>
+        <select id="street_id" name="street_id">
+          <option value="">All streets</option>
+          {% for street in streets %}
+          <option value="{{ street.id }}" {% if selected_street_id == street.id %}selected{% endif %}>{{ street.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="rail-actions">
+        <button class="btn btn-primary btn-sm" type="submit">Apply filters</button>
+        <a class="btn btn-ghost btn-sm" href="/jobs">Clear all</a>
+      </div>
+      {% if filters_active %}
+      <p class="rail-active">
+        <span class="chip chip-muted">Filtered</span>
+        {% for status in statuses %}<span class="chip chip-{{ status }}">{{ STATUS_LABELS[status] }}</span>{% endfor %}
+      </p>
+      {% endif %}
+    </form>
+  </aside>
+
+  <section class="results">
+    <div class="results-head">
+      <p><strong>{{ jobs|length }}</strong> job{{ 's' if jobs|length != 1 }}
+        {% if filters_active %}<span class="chip chip-muted">Filtered</span>{% endif %}
+      </p>
+      <p class="muted">{{ total_jobs }} job{{ 's' if total_jobs != 1 }} in the register</p>
+    </div>
+
+    <div class="card">
+      {% if jobs %}
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="visually-hidden">Repair jobs</caption>
+          <thead>
+            <tr>
+              <th scope="col">Patch</th>
+              <th scope="col">Street</th>
+              <th scope="col">Crew</th>
+              <th scope="col" class="num">Setts</th>
+              <th scope="col">Consent ref</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for job in jobs %}
+            <tr>
+              <td data-label="Patch"><a href="/jobs/{{ job.id }}">{{ job.patch_location }}</a></td>
+              <td data-label="Street"><a href="/streets/{{ job.street_id }}">{{ job.street_name }}</a>{% if job.heritage_conservation_area %} <span class="chip chip-heritage">Heritage</span>{% endif %}</td>
+              <td data-label="Crew">{{ job.crew_name }}</td>
+              <td data-label="Setts" class="num">{{ job.sett_count }}</td>
+              <td data-label="Consent ref">{{ job.heritage_consent_ref or '—' }}</td>
+              <td data-label="Status">{{ ui.status_chip(job.status) }}</td>
+              <td data-label="" class="row-action">
+                <a class="btn btn-sm" href="/jobs/{{ job.id }}">Open</a>
+                <form method="post" action="/jobs/{{ job.id }}/delete" class="inline-form" data-confirm="Delete job #{{ job.id }}? This cannot be undone.">
+                  {{ ui.csrf(csrf_token) }}
+                  <button class="btn btn-sm btn-ghost" type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% elif filters_active %}
+      <div class="empty-inline">
+        <p>No jobs match these filters.</p>
+        <p><a class="btn btn-sm" href="/jobs">Clear filters</a> or <a href="/streets">raise a job from a patch</a>.</p>
+      </div>
+      {% else %}
+      <div class="empty-inline">
+        <p>No repair jobs raised yet.</p>
+        <p class="muted">Open a street, pick a patch and raise the first job.</p>
+        <p><a class="btn btn-sm" href="/streets">Go to the street registry</a></p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}

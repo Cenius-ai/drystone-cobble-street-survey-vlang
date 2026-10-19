@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Register a street{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="page-head-main">
+    <p class="eyebrow"><a href="/streets">Street registry</a> · new</p>
+    <h1 class="page-title">{{ ui.glyph('street') }}Register a street</h1>
+    <p class="page-lede">Every patch and repair job hangs from a street record. Names are unique across the register, and the heritage flag controls whether repair jobs need a consent reference.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn" href="/streets">Back to register</a>
+  </div>
+</header>
+
+<div class="split">
+  <aside class="rail" aria-label="Registration guidance">
+    <section class="rail-card">
+      <h2 class="rail-title">Before you save</h2>
+      <ul class="rail-list">
+        <li>Use the name the highway records use — it must be unique.</li>
+        <li>District is optional but keeps the filter rail useful.</li>
+        <li>Tick heritage only for a conservation area: jobs there need a consent reference.</li>
+      </ul>
+    </section>
+  </aside>
+
+  <section class="results">
+    <div class="card">
+      <h2 class="card-title">{{ ui.glyph('street') }}Street details</h2>
+      <form method="post" action="/streets" data-guard novalidate>
+        {{ ui.csrf(csrf_token) }}
+        <input type="hidden" name="origin" value="new">
+        <div class="form-grid">
+          <div class="field">
+            <label for="name">Street name</label>
+            <input id="name" name="name" type="text" value="{{ form.name }}" autocomplete="off"
+                   data-required-label="Enter the street name."
+                   {% if errors.get('name') %}aria-invalid="true" aria-describedby="err-name"{% endif %}>
+            {{ ui.field_error(errors, 'name') }}
+          </div>
+          <div class="field">
+            <label for="district">District</label>
+            <input id="district" name="district" type="text" value="{{ form.district }}"
+                   placeholder="e.g. {{ district_hint }}" autocomplete="off"
+                   {% if errors.get('district') %}aria-invalid="true" aria-describedby="err-district"{% endif %}>
+            {{ ui.field_error(errors, 'district') }}
+          </div>
+        </div>
+        <div class="field">
+          <label for="notes">Survey notes</label>
+          <textarea id="notes" name="notes" rows="3" placeholder="Surface condition, access notes, traffic management">{{ form.notes }}</textarea>
+          {{ ui.field_error(errors, 'notes') }}
+        </div>
+        <label class="check"><input type="checkbox" name="heritage" value="1" {% if form.heritage %}checked{% endif %}> Heritage conservation area</label>
+        <p class="field-help">Jobs on a conservation-area street need a heritage consent reference before they can be scheduled, started or completed.</p>
+        <p class="form-actions">
+          <button class="btn btn-primary" type="submit" data-busy-label="Registering…">Register street</button>
+          <a class="btn btn-ghost" href="/streets">Cancel</a>
+        </p>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

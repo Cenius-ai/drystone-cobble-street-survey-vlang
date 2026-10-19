@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Street registry{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="page-head-main">
+    <p class="eyebrow">Register</p>
+    <h1 class="page-title">{{ ui.glyph('street') }}Street registry</h1>
+    <p class="page-lede">
+      {% if streets %}{{ streets|length }} street{{ 's' if streets|length != 1 }} shown across {{ district_count }} district{{ 's' if district_count != 1 }}.
+      {% else %}No streets are registered yet.{% endif %}
+      Every patch and repair job hangs from a street record.
+    </p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-primary" href="/streets/new">Register a street</a>
+  </div>
+</header>
+
+<div class="split">
+  <aside class="rail" aria-label="Street filters">
+    <form method="get" action="/streets" class="rail-card">
+      <h2 class="rail-title">Filters</h2>
+      <div class="field">
+        <label for="q">Search</label>
+        <input id="q" name="q" type="search" value="{{ filters.q }}" placeholder="Street, district or note">
+      </div>
+      <fieldset class="field check-group">
+        <legend>Heritage status</legend>
+        <label class="check"><input type="radio" name="heritage" value="" {% if not filters.heritage %}checked{% endif %}> Any street</label>
+        <label class="check"><input type="radio" name="heritage" value="1" {% if filters.heritage == '1' %}checked{% endif %}> Conservation area</label>
+        <label class="check"><input type="radio" name="heritage" value="0" {% if filters.heritage == '0' %}checked{% endif %}> Not heritage</label>
+      </fieldset>
+      <div class="field">
+        <label for="sort">Sort by</label>
+        <select id="sort" name="sort">
+          <option value="name" {% if filters.sort == 'name' %}selected{% endif %}>Street name</option>
+          <option value="district" {% if filters.sort == 'district' %}selected{% endif %}>District</option>
+          <option value="patches" {% if filters.sort == 'patches' %}selected{% endif %}>Most patches</option>
+          <option value="newest" {% if filters.sort == 'newest' %}selected{% endif %}>Newest first</option>
+        </select>
+      </div>
+      <div class="rail-actions">
+        <button class="btn btn-primary btn-sm" type="submit">Apply filters</button>
+        <a class="btn btn-ghost btn-sm" href="/streets">Clear all</a>
+      </div>
+    </form>
+  </aside>
+
+  <section class="results">
+    <div class="results-head">
+      <p><strong>{{ streets|length }}</strong> street{{ 's' if streets|length != 1 }}
+        {% if filters_active %}<span class="chip chip-muted">Filtered</span>{% endif %}
+      </p>
+      <p class="muted">{{ district_count }} district{{ 's' if district_count != 1 }} surveyed</p>
+    </div>
+
+    <div class="card">
+      {% if streets %}
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="visually-hidden">Registered streets</caption>
+          <thead>
+            <tr>
+              <th scope="col">Street</th>
+              <th scope="col">District</th>
+              <th scope="col">Heritage</th>
+              <th scope="col" class="num">Patches</th>
+              <th scope="col" class="num">Jobs</th>
+              <th scope="col"><span class="visually-hidden">Open</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for street in streets %}
+            <tr>
+              <td data-label="Street"><a href="/streets/{{ street.id }}">{{ street.name }}</a></td>
+              <td data-label="District">{{ street.district or '—' }}</td>
+              <td data-label="Heritage">{{ ui.heritage_badge(street.heritage_conservation_area) }}</td>
+              <td data-label="Patches" class="num">{{ street.patch_count }}</td>
+              <td data-label="Jobs" class="num">{{ street.job_count }}</td>
+              <td data-label="" class="row-action"><a class="btn btn-sm" href="/streets/{{ street.id }}">Open</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% elif filters_active %}
+      <div class="empty-inline">
+        <p>No streets match these filters.</p>
+        <p><a class="btn btn-sm" href="/streets">Clear filters</a></p>
+      </div>
+      {% else %}
+      <div class="empty-inline">
+        <p>No streets registered yet. Use the form below to add the first one.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card" id="register-street">
+      <h2 class="card-title">{{ ui.glyph('street') }}Register a street</h2>
+      <form method="post" action="/streets" data-guard novalidate>
+        {{ ui.csrf(csrf_token) }}
+        <div class="form-grid">
+          <div class="field">
+            <label for="name">Street name</label>
+            <input id="name" name="name" type="text" value="{{ form.name }}" autocomplete="off"
+                   data-required-label="Enter the street name."
+                   {% if errors.get('name') %}aria-invalid="true" aria-describedby="err-name"{% endif %}>
+            {{ ui.field_error(errors, 'name') }}
+          </div>
+          <div class="field">
+            <label for="district">District</label>
+            <input id="district" name="district" type="text" value="{{ form.district }}"
+                   placeholder="e.g. {{ district_hint }}" autocomplete="off"
+                   {% if errors.get('district') %}aria-invalid="true" aria-describedby="err-district"{% endif %}>
+            {{ ui.field_error(errors, 'district') }}
+          </div>
+        </div>
+        <div class="field">
+          <label for="notes">Survey notes</label>
+          <textarea id="notes" name="notes" rows="2" placeholder="Surface condition, access notes, traffic management">{{ form.notes }}</textarea>
+          {{ ui.field_error(errors, 'notes') }}
+        </div>
+        <label class="check"><input type="checkbox" name="heritage" value="1" {% if form.heritage %}checked{% endif %}> Heritage conservation area</label>
+        <p class="field-help">Jobs on a conservation-area street need a heritage consent reference before they can be scheduled, started or completed.</p>
+        <p class="form-actions">
+          <button class="btn btn-primary" type="submit" data-busy-label="Registering…">Register street</button>
+        </p>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Survey dashboard{% endblock %} · {{ APP_NAME }}</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="/static/js/app.js" defer></script>
+</head>
+<body class="{% block body_class %}{% endblock %}">
+<a class="skip-link" href="#main">Skip to content</a>
+{% if operator %}
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/">
+      <svg class="brand-glyph" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+        <path d="M2 16.5c2.6-4.6 17.4-4.6 20 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M5 11c1.9-2.9 12.1-2.9 14 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".5"/>
+        <circle cx="12" cy="19.6" r="1.5" fill="currentColor"/>
+      </svg>
+      <span class="brand-text">
+        <strong>Drystone</strong>
+        <span class="brand-sub">Cobble Street Survey</span>
+      </span>
+    </a>
+    <nav class="mainnav" aria-label="Primary">
+      <a href="/" {% if active_nav == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+      <a href="/streets" {% if active_nav == 'streets' %}aria-current="page"{% endif %}>Streets</a>
+      <a href="/jobs" {% if active_nav == 'jobs' %}aria-current="page"{% endif %}>Repair jobs</a>
+      <a href="/crews" {% if active_nav == 'crews' %}aria-current="page"{% endif %}>Crews</a>
+    </nav>
+    <div class="operator">
+      <span class="operator-name">{{ operator.display_name }}</span>
+      <form method="post" action="/logout" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-ghost btn-sm" type="submit">Log out</button>
+      </form>
+    </div>
+  </div>
+</header>
+{% endif %}
+<main id="main" class="shell">
+  {% if flash %}
+  <div class="flash flash-{{ flash.kind }}" role="status" data-flash>
+    <span class="flash-dot" aria-hidden="true"></span>
+    <p>{{ flash.message }}</p>
+  </div>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="site-foot">
+  <div class="site-foot-inner">
+    <p><strong>{{ APP_NAME }}</strong> · single-operator survey register</p>
+    <p>Streets, patches, crews and repair jobs are stored locally in SQLite.</p>
+  </div>
+</footer>
+</body>
+</html>

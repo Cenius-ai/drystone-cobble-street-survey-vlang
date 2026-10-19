@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Survey dashboard{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="page-head-main">
+    <p class="eyebrow">Survey overview</p>
+    <h1 class="page-title">{{ ui.glyph('dashboard') }}Citywide survey state</h1>
+    <p class="page-lede">
+      {{ open_patches }} loose-set patch{{ 'es' if open_patches != 1 }} open across
+      {{ street_count }} registered street{{ 's' if street_count != 1 }}.
+      {% if consent_gaps %}
+      {{ consent_gaps }} heritage job{{ 's' if consent_gaps != 1 }} still need{{ '' if consent_gaps != 1 else 's' }} a consent reference before work can be scheduled.
+      {% else %}
+      Every heritage job has a consent reference on record.
+      {% endif %}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-primary" href="/jobs/new">Raise repair job</a>
+    <a class="btn" href="/streets/new">Register a street</a>
+  </div>
+</header>
+
+{% if is_empty %}
+<section class="card empty-state">
+  <h2 class="card-title">{{ ui.glyph('street') }}No streets are registered yet</h2>
+  <p>The survey register starts with the street: every patch and repair job hangs from one. Register the first street to begin logging loose setts.</p>
+  <p><a class="btn btn-primary" href="/streets">Register the first street</a></p>
+</section>
+{% else %}
+
+<section class="kpi-row" aria-label="Survey metrics">
+  <article class="kpi">
+    <p class="kpi-label">Open patches</p>
+    <p class="kpi-value">{{ open_patches }}</p>
+    <p class="kpi-meta">{{ total_patches - open_patches }} of {{ total_patches }} marked repaired</p>
+  </article>
+  <article class="kpi">
+    <p class="kpi-label">Setts outstanding</p>
+    <p class="kpi-value">{{ "{:,}".format(setts_open) }}</p>
+    <p class="kpi-meta">{{ "{:,}".format(setts_total) }} setts logged in total</p>
+  </article>
+  <article class="kpi">
+    <p class="kpi-label">Streets</p>
+    <p class="kpi-value">{{ street_count }}</p>
+    <p class="kpi-meta">{{ heritage_streets }} heritage conservation area{{ 's' if heritage_streets != 1 }}</p>
+  </article>
+  <article class="kpi">
+    <p class="kpi-label">Repair jobs</p>
+    <p class="kpi-value">{{ job_total }}</p>
+    <p class="kpi-meta">{{ job_counts['in-progress'] }} in progress · {{ job_counts['blocked'] }} blocked</p>
+  </article>
+  <article class="kpi {% if consent_gaps %}kpi-alert{% endif %}">
+    <p class="kpi-label">Consent gaps</p>
+    <p class="kpi-value">{{ consent_gaps }}</p>
+    <p class="kpi-meta">heritage jobs missing a reference</p>
+  </article>
+</section>
+
+<div class="dash-grid">
+  <section class="card">
+    <h2 class="card-title">{{ ui.glyph('job') }}Jobs by status</h2>
+    <ul class="bars">
+      {% for bar in job_bars %}
+      <li class="bar-row">
+        <a class="bar-label" href="/jobs?status={{ bar.status }}">{{ bar.label }}</a>
+        <span class="bar-track" aria-hidden="true"><span class="bar-fill {{ bar.bar_class }}"></span></span>
+        <span class="bar-count">{{ bar.count }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="card-foot"><a href="/jobs">All {{ job_total }} repair job{{ 's' if job_total != 1 }}</a></p>
+  </section>
+
+  <section class="card {% if consent_gaps %}card-alert{% endif %}">
+    <h2 class="card-title">{{ ui.glyph('patch') }}Heritage consent</h2>
+    {% if consent_gaps %}
+    <p class="stat-line"><strong>{{ consent_gaps }}</strong> job{{ 's' if consent_gaps != 1 }} on a conservation-area street with no consent reference.</p>
+    <ul class="mini-list">
+      {% for gap in gap_jobs %}
+      <li>
+        <a href="/jobs/{{ gap.id }}">{{ gap.street_name }} · patch #{{ gap.patch_id }}</a>
+        {{ ui.status_chip(gap.status) }}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted-line">Every heritage job carries a consent reference. Nothing is waiting on a conservation officer.</p>
+    {% endif %}
+    <p class="card-foot">{{ heritage_streets }} of {{ street_count }} streets are conservation areas.</p>
+  </section>
+</div>
+
+<div class="dash-grid">
+  <section class="card">
+    <h2 class="card-title">{{ ui.glyph('patch') }}Recent patches</h2>
+    {% if recent_patches %}
+    <div class="table-wrap">
+      <table class="data">
+        <caption class="visually-hidden">Five most recently logged patches</caption>
+        <thead>
+          <tr>
+            <th scope="col">Location</th>
+            <th scope="col">Street</th>
+            <th scope="col" class="num">Setts</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for patch in recent_patches %}
+          <tr>
+            <td data-label="Location"><a href="/patches/{{ patch.id }}">{{ patch.location_description }}</a></td>
+            <td data-label="Street"><a href="/streets/{{ patch.street_id }}">{{ patch.street_name }}</a>{% if patch.heritage_conservation_area %} <span class="chip chip-heritage">Heritage</span>{% endif %}</td>
+            <td data-label="Setts" class="num">{{ patch.sett_count }}</td>
+            <td data-label="Status">{{ ui.patch_status_chip(patch.status) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-inline">
+      <p>No patches logged yet. Open a street and record the first loose setts.</p>
+      <p><a class="btn btn-sm" href="/streets">Go to the street registry</a></p>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2 class="card-title">{{ ui.glyph('job') }}Recent jobs</h2>
+    {% if recent_jobs %}
+    <div class="table-wrap">
+      <table class="data">
+        <caption class="visually-hidden">Five most recently raised repair jobs</caption>
+        <thead>
+          <tr>
+            <th scope="col">Street</th>
+            <th scope="col">Crew</th>
+            <th scope="col" class="num">Setts</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in recent_jobs %}
+          <tr>
+            <td data-label="Street"><a href="/jobs/{{ job.id }}">{{ job.street_name }}</a> <span class="muted">patch #{{ job.patch_id }}</span></td>
+            <td data-label="Crew">{{ job.crew_name }}</td>
+            <td data-label="Setts" class="num">{{ job.sett_count }}</td>
+            <td data-label="Status">{{ ui.status_chip(job.status) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-inline">
+      <p>No repair jobs raised yet. Open a patch to raise the first one.</p>
+      <p><a class="btn btn-sm" href="/streets">Find a patch</a></p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endif %}
+{% endblock %}

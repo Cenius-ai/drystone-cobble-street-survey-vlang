@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Crew roster{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="page-head-main">
+    <p class="eyebrow">Resourcing</p>
+    <h1 class="page-title">{{ ui.glyph('crew') }}Repair crew roster</h1>
+    <p class="page-lede">
+      {{ crews|length }} crew{{ 's' if crews|length != 1 }} on the roster · {{ active_count }} active, {{ inactive_count }} inactive.
+      Only active crews can be assigned to a repair job.
+    </p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-primary" href="#add-crew">Add a crew</a>
+  </div>
+</header>
+
+<div class="detail-grid">
+  <div class="detail-main">
+    <section class="card">
+      <h2 class="card-title">{{ ui.glyph('crew') }}Crews</h2>
+      {% if crews %}
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="visually-hidden">Repair crews</caption>
+          <thead>
+            <tr>
+              <th scope="col">Crew</th>
+              <th scope="col">Foreman</th>
+              <th scope="col">State</th>
+              <th scope="col" class="num">Jobs</th>
+              <th scope="col"><span class="visually-hidden">Open</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for crew in crews %}
+            <tr>
+              <td data-label="Crew"><a href="/crews/{{ crew.id }}">{{ crew.name }}</a></td>
+              <td data-label="Foreman">{{ crew.foreman or '—' }}</td>
+              <td data-label="State">{{ ui.crew_state(crew.active) }}</td>
+              <td data-label="Jobs" class="num">{{ crew.job_count }}</td>
+              <td data-label="" class="row-action"><a class="btn btn-sm" href="/crews/{{ crew.id }}">Open</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-inline">
+        <p>No crews on the roster yet. Add the first crew so patches can be assigned.</p>
+      </div>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="detail-side">
+    <section class="card" id="add-crew">
+      <h2 class="card-title">{{ ui.glyph('crew') }}Add a crew</h2>
+      <form method="post" action="/crews" data-guard novalidate>
+        {{ ui.csrf(csrf_token) }}
+        <div class="field">
+          <label for="name">Crew name</label>
+          <input id="name" name="name" type="text" value="{{ form.name }}" placeholder="e.g. Yard Crew C"
+                 data-required-label="Enter the crew name."
+                 {% if errors.get('name') %}aria-invalid="true" aria-describedby="err-name"{% endif %}>
+          {{ ui.field_error(errors, 'name') }}
+        </div>
+        <div class="field">
+          <label for="foreman">Foreman</label>
+          <input id="foreman" name="foreman" type="text" value="{{ form.foreman }}" placeholder="e.g. Sam Okonjo"
+                 data-required-label="Enter the foreman for this crew."
+                 {% if errors.get('foreman') %}aria-invalid="true" aria-describedby="err-foreman"{% endif %}>
+          {{ ui.field_error(errors, 'foreman') }}
+        </div>
+        <p class="field-help">New crews start active and can be assigned jobs straight away.</p>
+        <p class="form-actions">
+          <button class="btn btn-primary" type="submit" data-busy-label="Adding crew…">Add crew</button>
+        </p>
+      </form>
+    </section>
+  </aside>
+</div>
+{% endblock %}
