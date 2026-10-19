@@ -1,0 +1,11 @@
+# Drystone Cobble Street Survey — runtime and test dependencies.
+# Starlette + Uvicorn only: FastAPI must never be installed or imported.
+starlette==1.3.1
+uvicorn==0.51.0
+jinja2==3.1.4
+itsdangerous==2.2.0
+python-multipart==0.0.32
+
+# Test runner (pytest) plus the HTTP client Starlette's TestClient is built on.
+pytest==9.1.1
+httpx==0.28.1
