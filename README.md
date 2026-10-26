@@ -76,7 +76,7 @@ See [`INSTALL.md`](INSTALL.md) for full setup and usage instructions.
 
 ## Architecture
 
-The setup script (`install.sh`) installs runtime dependencies and loads a starter dataset so the app is immediately usable. The V codebase (61 files) is self-contained — no external services needed to evaluate it. Top-level layout: `app/`, `static/`, `templates/`, `tests/`. Step-by-step setup guide: [`INSTALL.md`](INSTALL.md).
+The setup script (`install.sh`) installs runtime dependencies and loads a starter dataset so the app is immediately usable. The V codebase (48 files) is self-contained — no external services needed to evaluate it. Top-level layout: `app/`, `static/`, `templates/`, `tests/`. Step-by-step setup guide: [`INSTALL.md`](INSTALL.md).
 
 ## FAQ
 
